@@ -9,6 +9,18 @@ Param(
     [switch]$UseTls12,
     [string]$CconfigPath = '.\Config.psd1'
 )
+Function  Get-SCOMWorkflowName {
+    [CmdletBinding()]
+    Param($AlertDetail)
+
+    if($AlertDetail.ismonitoralert) {
+        $AlertDetail.monitorName
+    } else {
+        $AlertDetail.ruleName
+    }
+
+
+}
 Function Get-SccomRestAlertLastModified  {
     [CmdletBinding()]
    Param(
@@ -27,19 +39,15 @@ Function Get-SccomRestAlertLastModified  {
 
     if ($UseTls12.IsPresent) {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 
-    $Response = Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/alertDetails/$AlertID" -Method Post -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session
+    $Response = Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/alertInformation/$AlertID"  -Method Get -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session
     } else {
-        $Response = Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/alert$AlertID" -Method Post -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session
+        $Response = Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/alertInformation/$AlertID" -Method Get -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session
     }
 
 
-    # Print out the alert results
-    $Alertdetails = $Response.Rows
-    $Alertdetails
     
-    Write-Verbose "$($Alerts.Count) number of alerts returned."
-    
-    
+    $Response.alertHistoryResponses.TimeModified | % { [datetime]$_} | Sort-Object -Descending)[0]
+            
 }
 Function Get-ScomRestAlertDetails {
     [CmdletBinding()]
@@ -56,10 +64,19 @@ Function Get-ScomRestAlertDetails {
     )
 
  
+    if ($UseTls12.IsPresent) {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 
+    $Response = Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/alertDetails/$AlertID"  -Method Get -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session
+    } else {
+        $Response = Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/alertDetails/$AlertID" -Method Get -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session
+    }
 
-c
+
     
-    Write-Verbose "$($Alerts.Count) number of alerts returned."
+    $Response
+
+    
+
     <#
     GET http://<Servername>/OperationsManager/data/alertDetails/{alertId}
     #>
@@ -217,7 +234,7 @@ ResolutionState = $Alert.ResolutionState
 AlertID = $Alert.ID
 MonitoringObjectDisplayName = $alert.MonitoringObjectDisplayName 
 MonitoringObjectPath = $Alert.monitoringobjectpath
-WorkflowName = Get-WorkflowName -AlertDetail $AlertDetail
+WorkflowName = Get-SCOMWorkflowName -AlertDetail $AlertDetail
 ClassID = $AlertDetail.typeSourceId
 }
 Write-Verbose $AlertOBjectwithDetail

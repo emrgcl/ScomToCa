@@ -1,4 +1,4 @@
 @{
     MonitoringClassIDs= @('','')
-    MoitoringRuleIds = @('','')
+    WorkflowName = @('','')
 }

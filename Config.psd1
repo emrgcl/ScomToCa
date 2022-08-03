@@ -1,0 +1,4 @@
+@{
+    MonitoringClassIDs= @('','')
+    MoitoringRuleIds = @('','')
+}

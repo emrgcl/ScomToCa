@@ -39,7 +39,7 @@ Function Write-Log {
     }
     $Log = "[$(Get-Date -Format G)][$((Get-PSCallStack)[1].Command)] $Message"
     
-    Write-Log $Log
+    Write-Verbose $Log
     $Log | Out-File -FilePath $LogFilePath -Append -Force
     
 }
@@ -285,7 +285,7 @@ $Starttime = Get-Date
  try {
 # Import Config
 $config = Import-PowerShellDataFile -ErrorAction Stop -Path $ConfigPath
-$LogfilePath = $config.LogFilePath
+$LogFilePath = $config.LogFilePath
 # Get Auth Header
 $SCOMHeaderObject = get-SCOMHeaderObject -WebConsole $WebConsole -ErrorAction Stop
 $Log = "[$(Get-Date -Format G)] Successfully intialized config and got authentication token."

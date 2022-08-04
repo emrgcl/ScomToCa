@@ -1,5 +1,5 @@
 @{
     MonitoringClassIDs= @('','')
     WorkflowName = @('','')
-    $LogFilePath = '.\New-ScomIncident.log'
+    LogFilePath = '.\New-ScomIncident.log'
 }

@@ -7,9 +7,42 @@ Param(
     $ResolutionState,
     [pscredential]$Credential,
     [switch]$UseTls12,
-    [string]$CconfigPath = '.\Config.psd1'
+    [string]$ConfigPath = '.\Config.psd1'
 )
+Function Write-Log {
 
+    [CmdletBinding()]
+    Param(
+    
+    
+    [Parameter(Mandatory = $True)]
+    [string]$Message,
+    [string]$LogFilePath = "$($env:TEMP)\log_$((New-Guid).Guid).txt",
+    [Switch]$DoNotRotateDaily
+    )
+    
+    if ($DoNotRotateDaily) {
+
+        
+        $LogFilePath = if ($Script:LogFilePath) {$Script:LogFilePath} else {$LogFilePath}
+            
+    } else {
+        if ($Script:LogFilePath) {
+
+        $LogFilePath = $Script:LogFilePath
+        $DayStamp = (Get-Date -Format 'yMMdd').Tostring()
+        $Extension = ($LogFilePath -split '\.')[-1]
+        $LogFilePath -match "(?<Main>.+)\.$extension`$" | Out-Null
+        $LogFilePath = "$($Matches.Main)_$DayStamp.$Extension"
+        
+    } else {$LogFilePath}
+    }
+    $Log = "[$(Get-Date -Format G)][$((Get-PSCallStack)[1].Command)] $Message"
+    
+    Write-Log $Log
+    $Log | Out-File -FilePath $LogFilePath -Append -Force
+    
+}
 Function Get-ScomAlertObjects {
     [CmdletBinding()]
     Param($Alerts)
@@ -58,7 +91,7 @@ Function Get-DurationString {
     if($IncludeTime.IsPresent) {
     "[$(Get-Date -Format G)][$Section] Completed in  $Duration $TimeSelected."
     } else {
-        "[$Section] Completed in  $Duration $TimeSelected."
+        "[$Section] Completed in $Duration $TimeSelected."
     }
 }
 Function  Get-SCOMWorkflowName {
@@ -148,7 +181,7 @@ Function Get-SCOMHeaderObject {
     
     # The SCOM REST API authentication URL
     $URIBase = "https://$WebConsole/OperationsManager/authenticate"
-    Write-Verbose "Authentication URL = $URIBase"
+    Write-Log "Authentication URL = $URIBase"
     
     $AuthenticationParams = @{
  
@@ -164,12 +197,12 @@ Function Get-SCOMHeaderObject {
     if ($Credential -and $Credential -is [pscredential]) {
  
         $AuthenticationParams.Add('Credential',$Credential)
-        Write-Verbose 'Credentials used adding.'
+        Write-Log 'Credentials used adding.'
  
     } else {
  
         $AuthenticationParams.Add('UseDefaultCredentials',$true)
-        Write-Verbose 'Credentials not used, using defaults.'    
+        Write-Log 'Credentials not used, using defaults.'    
     }
  
     try {
@@ -178,9 +211,9 @@ Function Get-SCOMHeaderObject {
         $Authentication = Invoke-RestMethod @AuthenticationParams 
         # Initiate the Cross-Site Request Forgery (CSRF) token, this is to prevent CSRF attacks
         $CSRFtoken = $WebSession.Cookies.GetCookies($URIBase) | Where-Object { $_.Name -eq 'SCOM-CSRF-TOKEN' }
-        Write-Verbose "Token from the webssion = $($CSRFtoken.Value)"
+        Write-Log "Token from the webssion = $($CSRFtoken.Value)"
         $TokenLifeTimeHours = [Math]::Round((([datetime]::Parse( $Authentication.expiryTime))  - (Get-Date)).TotalHours,2)
-        Write-Verbose "Current authentication will last for $TokenLifeTimeHours hours."
+        Write-Log "Current authentication will last for $TokenLifeTimeHours hours."
         $SCOMHeaders.Add('SCOM-CSRF-TOKEN', [System.Web.HttpUtility]::UrlDecode($CSRFtoken.Value))
         [PSCustomObject]@{
             Headers = $SCOMHeaders
@@ -244,14 +277,15 @@ Function Get-ScomRestAlert {
     $Alerts = $Response.Rows
     $Alerts
     $ScriptDurationSeconds = [Math]::Round(((Get-Date) - $Starttime).TotalSeconds)
-    Write-Verbose "$($Alerts.Count) number of alerts returned."
+    Write-Log "$($Alerts.Count) number of alerts returned."
  
 }
 #region Main
 $Starttime = Get-Date
  try {
 # Import Config
-$config = Import-PowerShellDataFile -ErrorAction Stop -Path $CconfigPath
+$config = Import-PowerShellDataFile -ErrorAction Stop -Path $ConfigPath
+$LogfilePath = $config.LogFilePath
 # Get Auth Header
 $SCOMHeaderObject = get-SCOMHeaderObject -WebConsole $WebConsole -ErrorAction Stop
 $Log = "[$(Get-Date -Format G)] Successfully intialized config and got authentication token."
@@ -261,21 +295,21 @@ Catch {
     throw $Log
 }
 finally {
-    Write-Verbose $Log
-    $DurationMessage = Get-DurationString -Starttime $Starttime -Section 'Script Initialization' -TimeSelector TotalSeconds -IncludeTime
-    Write-Verbose $DurationMessage
+    Write-Log $Log
+    $DurationMessage = Get-DurationString -Starttime $Starttime -Section 'Script Initialization' -TimeSelector TotalSeconds
+    Write-Log $DurationMessage
 }
  
 # get all new alerts
 $AlertsStart = Get-Date
 $Alerts = get-ScomRestAlert -WebConsole $WebConsole -resolutionstate 'New' -SCOMHeaderObject $SCOMHeaderObject -UseTls12
-$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get All Alerts' -TimeSelector TotalSeconds -IncludeTime
-Write-Verbose $Log
+$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get All Alerts' -TimeSelector TotalSeconds
+Write-Log $Log
 # Consolidate Alerts
 $AlertDetatilStart = Get-date
 Get-ScomAlertObjects -Alerts $Alerts 
-$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get Alert Details' -TimeSelector TotalSeconds -IncludeTime
-Write-Verbose $Log
+$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get Alert Details' -TimeSelector TotalSeconds
+Write-Log $Log
 
  
 # Get Alert Monitor/rule information
@@ -334,7 +368,7 @@ POST http://<Servername>/OperationsManager/data/alertResolutionStates
  
  
  
-$Log = Get-DurationString -Starttime $Starttime -Section 'Script main' -TimeSelector TotalSeconds -IncludeTime
-Write-Verbose $Log
+$Log = Get-DurationString -Starttime $Starttime -Section 'Script main' -TimeSelector TotalSeconds
+Write-Log $Log
 #endregion 
  

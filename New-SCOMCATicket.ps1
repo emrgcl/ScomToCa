@@ -266,9 +266,9 @@ Function Get-ScomRestAlert {
     }
     Switch ($severity)
     {
-        'Error' {$Criteria = "$Criteria and (Severity = 'Error')"}
-        'Information' {$Criteria = "$Criteria and (Severity = 'Information')"}
-        'Warning' {$Criteria = "$Criteria and (Severity = 'Warning')"}   
+        'Error' {$Criteria = "$Criteria and (Severity = '2')"}
+        'Warning' {$Criteria = "$Criteria and (Severity = '1')"} 
+        'Information' {$Criteria = "$Criteria and (Severity = '0')"}  
         default {$Criteria = $Criteria}
     }
     $Query = @(@{         

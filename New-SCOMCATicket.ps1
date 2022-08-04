@@ -512,12 +512,10 @@ foreach ($AlertOBject in $FilteredAlertObjects) {
         }
         finally{
             Write-Log $Log
-            
         }
-       
     }
 
-    if ($CraetedAlertIds.Count -gt 0) {
+if ($CraetedAlertIds.Count -gt 0) {
 Set-ScomRestResolutionState -AlertIds $CraetedAlertIds -State $config.TicketCreatedState -comment $Config.CreateComment -SCOMHeaderObject $SCOMHeaderObject -UseTls12
 }
 $Log = Get-DurationString -Starttime $IncidentStart -Section 'Incident Creation' -TimeSelector TotalSeconds

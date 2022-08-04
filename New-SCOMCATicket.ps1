@@ -1,4 +1,4 @@
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess = $true)]
 Param(
  
     [Parameter(Mandatory = $true)]
@@ -11,6 +11,80 @@ Param(
     [switch]$UseTls12,
     [string]$ConfigPath = '.\Config.psd1'
 )
+
+Function Set-ScomRestResolutionState {
+    [CmdletBinding()]
+    Param(
+         $AlertIds,
+         $State,
+         $Comment,
+         $SCOMHeaderObject,
+         [switch]$UseTls12
+    )
+    $JsonBody = @{
+        alertIds = $AlertIds
+        resolutionState = $State
+        comment = $Comment
+
+    } | ConvertTo-Json
+    if ($UseTls12.IsPresent) {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 
+        $Response = Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/alertResolutionStates" -Method Post -Body $JsonBody -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false
+        } else {
+            $Response = Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/alertResolutionStates" -Method Post -Body $JsonBody -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false
+        }
+    $Response
+}
+Function new-CATicket {
+    [CmdletBinding()]
+    Param(
+        $Source,
+        $Resource_name,
+        $description,
+        $Severity,
+        $Modified,
+        $Manager
+
+
+    )
+
+    $content_Desc = @"
+    "source" = $source
+    "resource_name" = $Resource_name
+    "description" = $description
+    "severity" = $Severity
+    "modified" = $localTime
+    "manager" = $alertName
+"@
+ try{
+$Proxy = New-WebServiceProxy -Uri http://cmtest.yapikredi.com.tr/wsCozumMerkezi/CmService.asmx?wsdl -ErrorAction Stop
+$Proxy.Timeout = 60000
+ 
+#$Values = '' | Select-Object @{n = "Value" ;e={$resource_name}},@{n= "Key" ; e={"affected_resource"}}
+$ValuesObject = [PSCustomObject]@{
+    Key = 'affected_resource'
+    Value = $Resource_name
+} 
+$Proxy.CreateRequest("430980","scom",$content_Desc,"","test","DisMusteriHizmetKesintisiYaratmaz","BazıIcMusterilerDisMusteriler","Scom",$ValuesObject)
+$Log = 'Successfuly created ticket.'
+}
+catch {
+    $Log = "[ERROR]Could not create ticket. Error Details: '$($_.Exception.Message)'"
+}
+Finally{
+    Write-Log $Log
+}
+}
+Function Test-ClassName{
+    [CmdletBinding()]
+    Param(
+        $ClassNames,
+        $Config
+    )
+
+    $Result = $ClassNames | Where-Object {$_ -in $COnfig.ClassNames}
+    -not [string]::IsNullOrEmpty($Result)
+}
 Function Get-ScomRestClass  {
     [CmdletBinding()]
    Param(
@@ -112,7 +186,7 @@ Function Get-ScomAlertObjects {
          
          
         [PSCustomObject]@{
-         
+        AlertName = $Alert.Name 
         NetBiosComputerName = $Alert.NetBiosComputerName
         Source = $AlertDetail.Source
         AlertDescription = $Alert.description
@@ -382,70 +456,32 @@ Write-Log $Log
 # Consolidate Alerts
 $AlertDetatilStart = Get-date
 $AlertObjects = Get-ScomAlertObjects -Alerts $Alerts 
+# remove below line later
 $AlertObjects | Export-Clixml -Path ".\AlertObjects_$((new-guid).Guid).xml"
 $Log = Get-DurationString -Starttime $AlertDetatilStart -Section 'Get Alert Details' -TimeSelector TotalSeconds
 Write-Log $Log
-
+<#
 # Get classes 
 $ClassStart = Get-Date
 $Classes=Get-ScomRestClasses -SCOMHeaderObject $ScomHeaderOBject -WebConsole $webconsole -UseTls12 -Verbose -ClassID '0a188da7-0273-3b4d-dde4-7bf278cbc68d'
 $Log = Get-DurationString -Starttime $ClassStart -Section 'Get All Classes' -TimeSelector TotalSeconds
 Write-Log $Log
-# Get Alert Monitor/rule information
- 
-# create an alert objecct with required parameters. 
-<#
-    Filter Alersts based on
-    1) MoitoringRuleId
-    2) MonitoringClassID
-    3) State = Kayit_ac
- 
 #>
- 
- 
-#region Create new CA Incident
- 
- 
-<#
-$content_Desc = @â€
-    "source" = $source
-    "resource_name" = 
-    "description" = $description
-    "severity" = $($severity_map[$severity])
-    "modified" = $localTime
-    "type" = $resolution
-    "class" = $category
-    "manager" = $alertName
-â€œ@
- 
-$Proxy = New-WebServiceProxy -Uri http://cmtest.yapikredi.com.tr/wsCozumMerkezi/CmService.asmx?wsdl
-$Proxy.Timeout = 60000
- 
-$Values = '' | Select-Object @{n = "Value" ;e={$resource_name}},@{n= "Key" ; e={"affected_resource"}}
- 
-write-host  $content_Desc
-"`n" + $content_Desc | Out-File "c:\temp\output.txt" -Append
-$ret = $Proxy.CreateRequest("430980","scom",$content_Desc,"","test","DisMusteriHizmetKesintisiYaratmaz","BazÄ±IcMusterilerDisMusteriler","Scom",$Values)
-echo $ret
-$ret | Out-File "c:\temp\output.txt" -Append
-#>
- 
-#endregion
-# Set Kayit acabiladiÄŸin alertlerin resolution states to Kayit_acildi. Bunun iÃ§in AlertIds diye bir fieldda alertidleri gÃ¶ndermen yeterli. 
- 
-<#
-POST http://<Servername>/OperationsManager/data/alertResolutionStates
- 
-{
-  "alertIds": [
-    "667736a8-d59a-407b-b142-80fd74ba4041"
-  ],
-  "resolutionState": 249,
-  "comment": "Acko"
+
+$FilteredAlertObjects = $AlertObjects | Where-Object { (Test-ClassName -ClassNames $_.ClassNames -Config $Config) -or ($_.WorkflowName -in $Config.WorkflowNames) }
+# Incident Creation
+$IncidentStart = Get-Date
+$CraetedAlertIds = @()
+foreach ($AlertOBject in $FilteredAlertObjects) {
+    if ($PSCmdlet.ShouldProcess($AlertOBject, 'Create Incident')) {
+        new-SCOMCATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName
+        $CraetedAlertIds += $AlertOBject.AlertID
+    }
+
 }
-#>
- 
- 
+Set-ScomRestResolutionState -AlertIds $CraetedAlertIds -State $config.TicketCreatedState -comment $Config.CreateComment -SCOMHeaderObject $SCOMHeaderObject -UseTls12
+$Log = Get-DurationString -Starttime $IncidentStart -Section 'Incident Creation' -TimeSelector TotalSeconds
+Write-Log $Log
  
 $Log = Get-DurationString -Starttime $Starttime -Section 'Script main' -TimeSelector TotalSeconds
 Write-Log $Log

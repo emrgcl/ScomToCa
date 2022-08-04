@@ -1,5 +1,7 @@
 @{
-    MonitoringClassIDs= @('0a188da7-0273-3b4d-dde4-7bf278cbc68d','')
-    WorkflowName = @('Alert on Failed Power Shell Scripts','MSSQL on Windows: Monitoring error')
+    ClassNames= @('Biztalk Run-Time Role','Windows DNS Server')
+    WorkflowNames = @()#'MSSQL on Windows: Monitoring error','Windows Dns Server'
     LogFilePath = '.\New-ScomIncident.log'
+    TicketCreatedState = 236
+    CreateComment = 'Created by Powershell'
 }

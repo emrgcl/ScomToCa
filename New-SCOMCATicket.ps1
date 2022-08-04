@@ -472,6 +472,7 @@ foreach ($AlertOBject in $FilteredAlertObjects) {
         $CreateResult = new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName -ErrorAction Stop
         if ([int32]$CreateResult.IsSuccess -gt 0){
         $Log = "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"
+        $CreateResult
         $CraetedAlertIds += $AlertOBject.AlertID
         #$Ticket= $CreateResult.KayitNo
         } else {
@@ -489,12 +490,10 @@ foreach ($AlertOBject in $FilteredAlertObjects) {
             Write-Log $Log
             
         }
-
-        
+       
     }
 
-
-if ($CraetedAlertIds.Count -gt 0) {
+    if ($CraetedAlertIds.Count -gt 0) {
 Set-ScomRestResolutionState -AlertIds $CraetedAlertIds -State $config.TicketCreatedState -comment $Config.CreateComment -SCOMHeaderObject $SCOMHeaderObject -UseTls12
 }
 $Log = Get-DurationString -Starttime $IncidentStart -Section 'Incident Creation' -TimeSelector TotalSeconds

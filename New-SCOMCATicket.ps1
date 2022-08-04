@@ -476,9 +476,14 @@ $CraetedAlertIds = @()
 foreach ($AlertOBject in $FilteredAlertObjects) {
     
         try {
-            new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName
+        $CreateResult = new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName
+        if ([int32]$CreateResult.IsSuccess -gt 0){
         Write-Log "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"
         $CraetedAlertIds += $AlertOBject.AlertID
+        #$Ticket= $CreateResult.KayitNo
+        } else {
+            Write-Log "Could not create incident. Error: $($CreateResult.ErrorMessage)"
+        }
         }
         finally{
             

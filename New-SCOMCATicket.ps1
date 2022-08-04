@@ -11,6 +11,64 @@ Param(
     [switch]$UseTls12,
     [string]$ConfigPath = '.\Config.psd1'
 )
+Function Get-ScomRestClass  {
+    [CmdletBinding()]
+   Param(
+
+        [Parameter(Mandatory = $true)]
+        [string]$WebConsole,
+        [pscredential]$Credential,
+        [Parameter(Mandatory = $true)]
+        $SCOMHeaderObject,
+        [switch]$UseTls12,
+        [string]$ObjectID
+
+    )
+
+    
+    if ($UseTls12.IsPresent) {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 
+    $Response = Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/classesForObject/$ObjectID"  -Method GET -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false
+    } else {
+        $Response = Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/classesForObject/$ObjectID" -Method GET -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false
+    }
+
+ 
+    
+    $Response.Rows
+            
+}
+
+Function Get-ScomRestClasses  {
+    [CmdletBinding()]
+   Param(
+
+        [Parameter(Mandatory = $true)]
+        [string]$WebConsole,
+        [pscredential]$Credential,
+        [Parameter(Mandatory = $true)]
+        $SCOMHeaderObject,
+        [switch]$UseTls12,
+        [string]$ClassID
+
+    )
+$JSonBody = @"
+"Name LIKE '%'"
+"@ | ConvertTo-Json
+    
+    if ($UseTls12.IsPresent) {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 
+    $Response = Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/scomClasses"  -Method POST -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false -Body $JSonBody
+    } else {
+        $Response = Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/scomClasses/" -Method Post -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false -Body $JSonBody
+    }
+
+ 
+    
+    $Response.ScopeDatas
+            
+}
+
 Function Write-Log {
 
     [CmdletBinding()]
@@ -135,8 +193,7 @@ Function Get-ScomRestAlertLastModified  {
     ($Response.alertHistoryResponses.TimeModified | % { [datetime]$_} | Sort-Object -Descending)[0]
             
 }
- 
-Function Get-ScomRestAlertDetails {
+ Function Get-ScomRestAlertDetails {
     [CmdletBinding()]
     Param(
  
@@ -236,8 +293,7 @@ Function Get-SCOMHeaderObject {
     }
     # The query which contains the criteria for our alerts
 }
- 
-Function Get-ScomRestAlert {
+ Function Get-ScomRestAlert {
      [CmdletBinding()]
     Param(
  
@@ -330,7 +386,11 @@ $AlertObjects | Export-Clixml -Path ".\AlertObjects_$((new-guid).Guid).xml"
 $Log = Get-DurationString -Starttime $AlertDetatilStart -Section 'Get Alert Details' -TimeSelector TotalSeconds
 Write-Log $Log
 
- 
+# Get classes 
+$ClassStart = Get-Date
+$Classes=Get-ScomRestClasses -SCOMHeaderObject $ScomHeaderOBject -WebConsole $webconsole -UseTls12 -Verbose -ClassID '0a188da7-0273-3b4d-dde4-7bf278cbc68d'
+$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get All Classes' -TimeSelector TotalSeconds
+Write-Log $Log
 # Get Alert Monitor/rule information
  
 # create an alert objecct with required parameters. 

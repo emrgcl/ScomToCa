@@ -334,7 +334,7 @@ POST http://<Servername>/OperationsManager/data/alertResolutionStates
  
  
  
-$ScriptDurationSeconds = [Math]::Round(((Get-Date) - $Starttime).TotalSeconds)
-Write-Verbose "Script ended. Duration $ScriptDurationSeconds seconds."
+$Log = Get-DurationString -Starttime $Starttime -Section 'Script main' -TimeSelector TotalSeconds -IncludeTime
+Write-Verbose $Log
 #endregion 
  

@@ -483,7 +483,11 @@ foreach ($AlertOBject in $FilteredAlertObjects) {
         }
         }
         Catch {
-            $log= "Could not create incident. Error: $($CreateResult.ErrorMessage)"
+            if ($null -eq $CreateResult){
+                $log = "[ERROR]Request failed. Error: $($_.Exception.Message)"
+            } else {
+                $log= "[ERROR]Could not create incident. Error: $($CreateResult.ErrorMessage)"     
+            }
         }
         finally{
             Write-Log $Log

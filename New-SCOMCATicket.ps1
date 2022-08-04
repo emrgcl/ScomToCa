@@ -211,7 +211,13 @@ Function Get-SCOMHeaderObject {
         $Authentication = Invoke-RestMethod @AuthenticationParams 
         # Initiate the Cross-Site Request Forgery (CSRF) token, this is to prevent CSRF attacks
         $CSRFtoken = $WebSession.Cookies.GetCookies($URIBase) | Where-Object { $_.Name -eq 'SCOM-CSRF-TOKEN' }
-        Write-Log "Token from the webssion = $($CSRFtoken.Value)"
+        if ([string]::IsNullOrEmpty($CSRFtoken.value)){
+         Write-Log "Could not get token or token is invalid."     
+        } 
+        else {
+            Write-Log "Successfully got token. TokenLength : $($CSRFtoken.value).length characters."
+        }
+        Write-Log "Tokenlength from the webssion = $($CSRFtoken.Value) ."
         $TokenLifeTimeHours = [Math]::Round((([datetime]::Parse( $Authentication.expiryTime))  - (Get-Date)).TotalHours,2)
         Write-Log "Current authentication will last for $TokenLifeTimeHours hours."
         $SCOMHeaders.Add('SCOM-CSRF-TOKEN', [System.Web.HttpUtility]::UrlDecode($CSRFtoken.Value))
@@ -237,6 +243,8 @@ Function Get-ScomRestAlert {
         [string]$WebConsole,
         [ValidateSet('New','Closed','All')]
         $ResolutionState,
+        [ValidateSet('Warning','Information','Error')]
+        $Severity,
         [pscredential]$Credential,
         [Parameter(Mandatory = $true)]
         $SCOMHeaderObject,
@@ -253,6 +261,13 @@ Function Get-ScomRestAlert {
         'Closed' {$Criteria = "(ResolutionState = '255')"}
         'All' {$Criteria = "(ResolutionState = '0') or (ResolutionState = '255')"}
         Default {$Criteria = "(ResolutionState = '0') or (ResolutionState = '255')"}
+    }
+    Switch ($severity)
+    {
+        'Error' {$Criteria = "$Criteria and (Severity = 'Error')"}
+        'Information' {$Criteria = "$Criteria and (Severity = 'Information')"}
+        'Warning' {$Criteria = "$Criteria and (Severity = 'Warning')"}   
+        default {$Criteria = $Criteria}
     }
     $Query = @(@{         
             
@@ -276,7 +291,7 @@ Function Get-ScomRestAlert {
     # Print out the alert results
     $Alerts = $Response.Rows
     $Alerts
-    $ScriptDurationSeconds = [Math]::Round(((Get-Date) - $Starttime).TotalSeconds)
+    
     Write-Log "$($Alerts.Count) number of alerts returned."
  
 }
@@ -288,10 +303,10 @@ $config = Import-PowerShellDataFile -ErrorAction Stop -Path $ConfigPath
 $LogFilePath = $config.LogFilePath
 # Get Auth Header
 $SCOMHeaderObject = get-SCOMHeaderObject -WebConsole $WebConsole -ErrorAction Stop
-$Log = "[$(Get-Date -Format G)] Successfully intialized config and got authentication token."
+$Log = "Successfully intialized config and got authentication token."
 }
 Catch {
-    $Log = "[$(Get-Date -Format G)] Could not imitialize config or could not get authenticcation token. Eror: $($error[0].Exception.Message)"
+    $Log = "Could not imitialize config or could not get authenticcation token. Eror: $($error[0].Exception.Message)"
     throw $Log
 }
 finally {
@@ -302,13 +317,13 @@ finally {
  
 # get all new alerts
 $AlertsStart = Get-Date
-$Alerts = get-ScomRestAlert -WebConsole $WebConsole -resolutionstate 'New' -SCOMHeaderObject $SCOMHeaderObject -UseTls12
+$Alerts = get-ScomRestAlert -WebConsole $WebConsole -resolutionstate 'New' -SCOMHeaderObject $SCOMHeaderObject -UseTls12 -Severity Error
 $Log = Get-DurationString -Starttime $AlertsStart -Section 'Get All Alerts' -TimeSelector TotalSeconds
 Write-Log $Log
 # Consolidate Alerts
 $AlertDetatilStart = Get-date
-Get-ScomAlertObjects -Alerts $Alerts 
-$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get Alert Details' -TimeSelector TotalSeconds
+$AlertObjects = Get-ScomAlertObjects -Alerts $Alerts 
+$Log = Get-DurationString -Starttime $AlertDetatilStart -Section 'Get Alert Details' -TimeSelector TotalSeconds
 Write-Log $Log
 
  

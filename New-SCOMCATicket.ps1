@@ -496,7 +496,7 @@ foreach ($AlertOBject in $FilteredAlertObjects) {
         $CreateResult = new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName -ErrorAction Stop
         if ([int32]$CreateResult.IsSuccess -gt 0){
         $Log = "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"
-        Set-ScomAlertTicketID -WebConsole $WebConsole -SCOMHeaderObject $SCOMHeaderObject -UseTls12 -AlertID $AlertOBject.AlertID -TicketID $CreateResult.KayitNo -ErrorAction stop
+        #Set-ScomAlertTicketID -WebConsole $WebConsole -SCOMHeaderObject $SCOMHeaderObject -UseTls12 -AlertID $AlertOBject.AlertID -TicketID $CreateResult.KayitNo -ErrorAction stop
         $CraetedAlertIds += $AlertOBject.AlertID
         
         } else {

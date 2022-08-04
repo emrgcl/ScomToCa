@@ -123,7 +123,7 @@ Function Get-ScomAlertObjects {
         MonitoringObjectDisplayName = $alert.MonitoringObjectDisplayName 
         MonitoringObjectPath = $Alert.monitoringobjectpath
         WorkflowName = Get-SCOMWorkflowName -AlertDetail $AlertDetail
-        ClassID = $AlertDetail.typeSourceId
+        ClassNames = @((Get-ScomRestClass -SCOMHeaderObject $ScomHeaderOBject -WebConsole $webconsole -UseTls12 -Verbose -ObjectID $Alert.ID).DisplayName)
         }
          
         }    
@@ -190,7 +190,7 @@ Function Get-ScomRestAlertLastModified  {
  
  
     
-    ($Response.alertHistoryResponses.TimeModified | % { [datetime]$_} | Sort-Object -Descending)[0]
+    ($Response.alertHistoryResponses.TimeModified | ForEach-Object { [datetime]$_} | Sort-Object -Descending)[0]
             
 }
  Function Get-ScomRestAlertDetails {
@@ -389,7 +389,7 @@ Write-Log $Log
 # Get classes 
 $ClassStart = Get-Date
 $Classes=Get-ScomRestClasses -SCOMHeaderObject $ScomHeaderOBject -WebConsole $webconsole -UseTls12 -Verbose -ClassID '0a188da7-0273-3b4d-dde4-7bf278cbc68d'
-$Log = Get-DurationString -Starttime $AlertsStart -Section 'Get All Classes' -TimeSelector TotalSeconds
+$Log = Get-DurationString -Starttime $ClassStart -Section 'Get All Classes' -TimeSelector TotalSeconds
 Write-Log $Log
 # Get Alert Monitor/rule information
  

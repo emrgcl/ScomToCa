@@ -1,5 +1,5 @@
 @{
-    ClassNames= @('Biztalk Run-Time Role','Windows DNS Server')
+    ClassNames= @('Biztalk Run-Time Role')
     WorkflowNames = @()#'MSSQL on Windows: Monitoring error','Windows Dns Server'
     LogFilePath = '.\New-ScomIncident.log'
     TicketCreatedState = 236

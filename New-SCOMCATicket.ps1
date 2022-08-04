@@ -174,7 +174,7 @@ Function Write-Log {
     $Log = "[$(Get-Date -Format G)][$((Get-PSCallStack)[1].Command)] $Message"
     
     Write-Verbose $Log
-    $Log | Out-File -FilePath $LogFilePath -Append -Force
+    $Log | Out-File -FilePath $LogFilePath -Append -Force -Confirm:$false -WhatIf:$false
     
 }
 Function Get-ScomAlertObjects {
@@ -469,6 +469,7 @@ Write-Log $Log
 #>
 
 $FilteredAlertObjects = $AlertObjects | Where-Object { (Test-ClassName -ClassNames $_.ClassNames -Config $Config) -or ($_.WorkflowName -in $Config.WorkflowNames) }
+Write-log "Number of incidents to be created: $($FilteredAlertObjects.Count)"
 # Incident Creation
 $IncidentStart = Get-Date
 $CraetedAlertIds = @()

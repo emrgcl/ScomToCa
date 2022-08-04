@@ -12,6 +12,30 @@ Param(
     [string]$ConfigPath = '.\Config.psd1'
 )
 
+Function Set-ScomAlertTicketID {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$WebConsole,
+        [pscredential]$Credential,
+        [Parameter(Mandatory = $true)]
+        $SCOMHeaderObject,
+        [switch]$UseTls12,
+        [string]$AlertID,
+        [string]$TicketID
+        )
+        $JsonBody = @{
+            id = $AlertID
+            ticketId = $TicketID
+        } | ConvertTo-Json
+        if ($UseTls12.IsPresent) {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 
+            Invoke-RestMethod -Uri "https://$WebConsole/OperationsManager/data/alertDetails" -Method Post -Body $JsonBody -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false | Out-Null
+            } else {
+             Invoke-RestMethod -Uri "http://$WebConsole/OperationsManager/data/alertDetails" -Method Post -Body $JsonBody -ContentType "application/json" -Headers $SCOMHeaderObject.Headers -WebSession $SCOMHeaderObject.Session -Verbose:$false | Out-Null
+            }
+
+}
 Function Set-ScomRestResolutionState {
     [CmdletBinding()]
     Param(
@@ -472,9 +496,9 @@ foreach ($AlertOBject in $FilteredAlertObjects) {
         $CreateResult = new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName -ErrorAction Stop
         if ([int32]$CreateResult.IsSuccess -gt 0){
         $Log = "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"
-        $CreateResult
+        Set-ScomAlertTicketID -WebConsole $WebConsole -SCOMHeaderObject $SCOMHeaderObject -UseTls12 -AlertID $AlertOBject.AlertID -TicketID $CreateResult.KayitNo -ErrorAction stop
         $CraetedAlertIds += $AlertOBject.AlertID
-        #$Ticket= $CreateResult.KayitNo
+        
         } else {
            $log= "Could not create incident. Error: $($CreateResult.ErrorMessage)"
         }

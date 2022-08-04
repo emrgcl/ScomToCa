@@ -5,6 +5,8 @@ Param(
     [string]$WebConsole,
     [ValidateSet('New','Closed','All')]
     $ResolutionState,
+    [ValidateSet('Warning','Information','Error')]
+    $Severity,
     [pscredential]$Credential,
     [switch]$UseTls12,
     [string]$ConfigPath = '.\Config.psd1'
@@ -317,7 +319,7 @@ finally {
  
 # get all new alerts
 $AlertsStart = Get-Date
-$Alerts = get-ScomRestAlert -WebConsole $WebConsole -resolutionstate 'New' -SCOMHeaderObject $SCOMHeaderObject -UseTls12 -Severity Error
+$Alerts = get-ScomRestAlert -WebConsole $WebConsole -resolutionstate $ResolutionState -SCOMHeaderObject $SCOMHeaderObject -UseTls12 -Severity $Severity
 $Log = Get-DurationString -Starttime $AlertsStart -Section 'Get All Alerts' -TimeSelector TotalSeconds
 Write-Log $Log
 # Consolidate Alerts

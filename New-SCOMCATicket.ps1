@@ -56,7 +56,7 @@ Function new-CATicket {
     "modified" = $localTime
     "manager" = $alertName
 "@
- try{
+
 $Proxy = New-WebServiceProxy -Uri http://cmtest.yapikredi.com.tr/wsCozumMerkezi/CmService.asmx?wsdl -ErrorAction Stop
 $Proxy.Timeout = 60000
  
@@ -66,15 +66,12 @@ $ValuesObject = [PSCustomObject]@{
     Value = $Resource_name
 } 
 $Proxy.CreateRequest("430980","scom",$content_Desc,"","test","DisMusteriHizmetKesintisiYaratmaz","BazıIcMusterilerDisMusteriler","Scom",$ValuesObject)
-$Log = 'Successfuly created ticket.'
+
 }
-catch {
-    $Log = "[ERROR]Could not create ticket. Error Details: '$($_.Exception.Message)'"
-}
-Finally{
-    Write-Log $Log
-}
-}
+
+
+
+
 Function Test-ClassName{
     [CmdletBinding()]
     Param(
@@ -476,16 +473,20 @@ $CraetedAlertIds = @()
 foreach ($AlertOBject in $FilteredAlertObjects) {
     
         try {
-        $CreateResult = new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName
+        $CreateResult = new-CATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName -ErrorAction Stop
         if ([int32]$CreateResult.IsSuccess -gt 0){
-        Write-Log "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"
+        $Log = "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"
         $CraetedAlertIds += $AlertOBject.AlertID
         #$Ticket= $CreateResult.KayitNo
         } else {
-            Write-Log "Could not create incident. Error: $($CreateResult.ErrorMessage)"
+           $log= "Could not create incident. Error: $($CreateResult.ErrorMessage)"
         }
+        }
+        Catch {
+            $log= "Could not create incident. Error: $($CreateResult.ErrorMessage)"
         }
         finally{
+            Write-Log $Log
             
         }
 

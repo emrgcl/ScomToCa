@@ -474,7 +474,7 @@ Write-log "Number of incidents to be created: $($FilteredAlertObjects.Count)"
 $IncidentStart = Get-Date
 $CraetedAlertIds = @()
 foreach ($AlertOBject in $FilteredAlertObjects) {
-    if ($PSCmdlet.ShouldProcess($AlertOBject, 'Create Incident')) {
+    if ($PSCmdlet.ShouldProcess("$AlertOBject", 'Create Incident')) {
         try {
         new-SCOMCATicket -Source $AlertObject.Source -resource_name $AlertOBject -description $AlertOBject.AlertDescription -Severity $AlertOBject.Severity -modified $AlertOBject.TimeModified -manager $AlertOBject.AlertName
         Write-Log "Sucessfully Created Incident. AlertName = '$($AlertObject.AlertName)',Severity = '$($AlertObject.Severity)',State = '$($AlertObject.ResolutionState)', AlertID = '$($AlertObject.AlertID)', NetbiosComputerName= '$($AlertObject.NetBiosComputerName)'"

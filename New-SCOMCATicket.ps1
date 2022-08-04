@@ -5,7 +5,7 @@ Param(
     [string]$WebConsole,
     [ValidateSet('New','Closed','All')]
     $ResolutionState,
-    [ValidateSet('Warning','Information','Error')]
+    [ValidateSet('Warning','Information','Error','All')]
     $Severity,
     [pscredential]$Credential,
     [switch]$UseTls12,
@@ -217,9 +217,9 @@ Function Get-SCOMHeaderObject {
          Write-Log "Could not get token or token is invalid."     
         } 
         else {
-            Write-Log "Successfully got token. TokenLength : $($CSRFtoken.value).length characters."
+            Write-Log "Successfully got token. TokenLength : $(($CSRFtoken.value).length) characters."
         }
-        Write-Log "Tokenlength from the webssion = $($CSRFtoken.Value) ."
+        Write-Log "Tokenlength from the webssion = $(($CSRFtoken.value).length)"
         $TokenLifeTimeHours = [Math]::Round((([datetime]::Parse( $Authentication.expiryTime))  - (Get-Date)).TotalHours,2)
         Write-Log "Current authentication will last for $TokenLifeTimeHours hours."
         $SCOMHeaders.Add('SCOM-CSRF-TOKEN', [System.Web.HttpUtility]::UrlDecode($CSRFtoken.Value))
@@ -245,7 +245,7 @@ Function Get-ScomRestAlert {
         [string]$WebConsole,
         [ValidateSet('New','Closed','All')]
         $ResolutionState,
-        [ValidateSet('Warning','Information','Error')]
+        [ValidateSet('Warning','Information','Error','All')]
         $Severity,
         [pscredential]$Credential,
         [Parameter(Mandatory = $true)]
@@ -268,7 +268,8 @@ Function Get-ScomRestAlert {
     {
         'Error' {$Criteria = "$Criteria and (Severity = '2')"}
         'Warning' {$Criteria = "$Criteria and (Severity = '1')"} 
-        'Information' {$Criteria = "$Criteria and (Severity = '0')"}  
+        'Information' {$Criteria = "$Criteria and (Severity = '0')"}
+        'All' {$Criteria = $Criteria}  
         default {$Criteria = $Criteria}
     }
     $Query = @(@{         
@@ -325,6 +326,7 @@ Write-Log $Log
 # Consolidate Alerts
 $AlertDetatilStart = Get-date
 $AlertObjects = Get-ScomAlertObjects -Alerts $Alerts 
+$AlertObjects | Export-Clixml -Path ".\AlertObjects_$((new-guid).Guid).xml"
 $Log = Get-DurationString -Starttime $AlertDetatilStart -Section 'Get Alert Details' -TimeSelector TotalSeconds
 Write-Log $Log
 

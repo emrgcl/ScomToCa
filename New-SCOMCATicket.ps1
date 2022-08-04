@@ -89,7 +89,7 @@ $ValuesObject = [PSCustomObject]@{
     Key = 'affected_resource'
     Value = $Resource_name
 } 
-$Proxy.CreateRequest("430980","scom",$content_Desc,"","","DisMusteriHizmetKesintisiYaratmaz","BazıIcMusterilerDisMusteriler","Scom",$ValuesObject)
+$Proxy.CreateRequest("430980","scom",$content_Desc,"","test","DisMusteriHizmetKesintisiYaratmaz","BazıIcMusterilerDisMusteriler","Scom",$ValuesObject)
 
 }
 Function Test-ClassName{

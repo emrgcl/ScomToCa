@@ -123,7 +123,7 @@ Function Get-ScomAlertObjects {
         MonitoringObjectDisplayName = $alert.MonitoringObjectDisplayName 
         MonitoringObjectPath = $Alert.monitoringobjectpath
         WorkflowName = Get-SCOMWorkflowName -AlertDetail $AlertDetail
-        ClassNames = @((Get-ScomRestClass -SCOMHeaderObject $ScomHeaderOBject -WebConsole $webconsole -UseTls12 -Verbose -ObjectID $Alert.ID).DisplayName)
+        ClassNames = @((Get-ScomRestClass -SCOMHeaderObject $ScomHeaderOBject -WebConsole $webconsole -UseTls12 -Verbose -ObjectID $AlertDetail.sourceID).DisplayName)
         }
          
         }    

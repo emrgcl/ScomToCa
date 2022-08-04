@@ -68,10 +68,6 @@ $ValuesObject = [PSCustomObject]@{
 $Proxy.CreateRequest("430980","scom",$content_Desc,"","test","DisMusteriHizmetKesintisiYaratmaz","BazıIcMusterilerDisMusteriler","Scom",$ValuesObject)
 
 }
-
-
-
-
 Function Test-ClassName{
     [CmdletBinding()]
     Param(
